@@ -1,0 +1,19 @@
+# Ambiente virtual
+.venv/
+
+# Artefatos gerados pelo pipeline (reprodutíveis via SEED — não versionar)
+data/*.parquet
+data/*.db
+data/*.joblib
+data/registry.db
+data/online_store.db
+
+# Feast
+feature_repo/data/
+
+# Caches Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/

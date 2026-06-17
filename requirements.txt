@@ -1,0 +1,10 @@
+# Versões fixadas para builds reprodutíveis (Docker e CI usam este arquivo).
+# Para desenvolvimento editável: `pip install -e ".[dev]"` (ver pyproject.toml).
+feast[redis]==0.64.0
+scikit-learn==1.9.0
+faker==40.23.0
+pandas==2.3.3
+pyarrow==24.0.0
+joblib==1.5.3
+fastapi==0.137.1
+uvicorn[standard]==0.34.0

@@ -1,0 +1,46 @@
+# Orquestra os três papéis do sistema:
+#   redis     -> ONLINE store (key-value de baixa latência)
+#   pipeline  -> job one-shot: gera dados, materializa, treina (e sai)
+#   api       -> serviço de serving online (sobe após o pipeline concluir)
+#
+# A pasta ./data é volume compartilhado: o pipeline escreve registry.db e
+# model.joblib ali, e a API os lê. As features online vêm do Redis (serviço).
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  pipeline:
+    build: .
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_CONNECTION_STRING: redis:6379
+      # Escala overridável: `FRAUD_FS_N_CUSTOMERS=500 docker compose up`
+      FRAUD_FS_N_CUSTOMERS: ${FRAUD_FS_N_CUSTOMERS:-200}
+      FRAUD_FS_N_DAYS: ${FRAUD_FS_N_DAYS:-45}
+    volumes:
+      - ./data:/app/data
+    command: bash scripts/run_pipeline.sh
+
+  api:
+    build: .
+    depends_on:
+      # Só sobe depois que o pipeline treinou o modelo e populou o Redis.
+      pipeline:
+        condition: service_completed_successfully
+    environment:
+      REDIS_CONNECTION_STRING: redis:6379
+    volumes:
+      - ./data:/app/data
+    ports:
+      - "8000:8000"
+    command: uvicorn fraud_fs.serve:app --host 0.0.0.0 --port 8000

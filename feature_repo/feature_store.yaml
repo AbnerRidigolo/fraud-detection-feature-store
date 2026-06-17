@@ -1,0 +1,29 @@
+# Configuração do repositório de features do Feast.
+#
+# Anatomia de uma feature store, mapeada aqui:
+#   - registry: catálogo (metadados) de TODAS as definições — entidades, feature
+#     views, fontes. É a "fonte de verdade" do que existe. Aqui é um arquivo
+#     local; em produção seria Postgres/SQL para ser compartilhado pelo time.
+#   - offline_store: onde vivem os dados HISTÓRICOS, usados para treino e para
+#     gerar datasets com point-in-time join. Aqui é `file` (Parquet).
+#   - online_store: onde vive o ÚLTIMO valor de cada feature por entidade, para
+#     leitura de baixíssima latência na inferência. Aqui é Redis.
+#
+# As `${...}` são interpoladas a partir de variáveis de ambiente por
+# `fraud_fs.store.get_store()`, o que faz o MESMO yaml funcionar local
+# (localhost), em Docker (redis:6379) e em CI sem nenhuma edição.
+
+project: fraud_detection
+provider: local
+
+registry: ${FRAUD_FS_REGISTRY}
+
+offline_store:
+  type: file
+
+online_store:
+  type: redis
+  connection_string: ${REDIS_CONNECTION_STRING}
+
+# Versão do formato de serialização da chave de entidade no online store.
+entity_key_serialization_version: 3
