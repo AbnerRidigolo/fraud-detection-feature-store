@@ -9,9 +9,8 @@ POR QUE estes dois verbos são o coração operacional de uma feature store:
 * **materialize** — copia os valores mais recentes de cada feature da OFFLINE
   store (Parquet histórico) para a ONLINE store (Redis). Este é o passo que
   muita gente não entende: o online store não se popula sozinho. Materializar é
-  o que transforma "tenho o histórico em disco" em "consigo ler o último valor
-  da conta X em 1 ms". Em produção isso roda agendado (cron/airflow) ou em
-  streaming; aqui rodamos uma vez sobre toda a janela.
+  o que disponibiliza o último perfil de cada conta para a inferência. Aqui
+  materializamos uma vez sobre toda a janela.
 """
 
 from __future__ import annotations
