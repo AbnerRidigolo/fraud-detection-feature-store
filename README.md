@@ -188,6 +188,12 @@ transação usada, o número de amostras e o ambiente. Requisições de aquecime
 ficam fora da amostra. Para comparar execuções, registre também o modelo de CPU e
 os recursos disponíveis ao Docker no texto de `--environment`.
 
+Uma [execução do CI em 19/11/2026](https://github.com/AbnerRidigolo/fraud-detection-feature-store/actions/runs/44574439542)
+mediu **p50 de 51,4 ms** e **p95 de 62,2 ms** em 100 requisições sequenciais,
+após 10 de aquecimento. O runner tinha 4 CPUs lógicas, Python 3.11.18, um worker
+Uvicorn e Redis 7 como serviço local. O teste usou uma única transação sintética
+e mediu a latência HTTP ponta a ponta nesse ambiente.
+
 ---
 
 ## Resultado de exemplo
