@@ -61,3 +61,23 @@ jobs:
         run: pip install -e .
       - name: Pipeline end-to-end (gera -> materializa -> treina -> infere)
         run: bash scripts/run_pipeline.sh
+      - name: Medir a API com Feast e Redis
+        shell: bash
+        run: |
+          python -m uvicorn fraud_fs.serve:app --host 127.0.0.1 --port 8000 > /tmp/fraud-uvicorn.log 2>&1 &
+          api_pid=$!
+          trap 'status=$?; kill "$api_pid" 2>/dev/null || true; if [ "$status" -ne 0 ]; then cat /tmp/fraud-uvicorn.log; fi' EXIT
+          curl --fail --silent --show-error --retry 8 --retry-connrefused --max-time 3 http://127.0.0.1:8000/health
+          python -m fraud_fs.benchmark --requests 100 --warmup 10 \
+            --environment "GitHub Actions ubuntu-latest, Python 3.11, Uvicorn com 1 worker e Redis 7 como serviço local" \
+            | tee latency.json
+          {
+            echo '### Latência de POST /score (carga sintética)'
+            echo '```json'
+            cat latency.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fraud-score-latency
+          path: latency.json

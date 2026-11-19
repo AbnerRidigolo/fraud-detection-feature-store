@@ -104,9 +104,9 @@ do valor desta compra" antes de a compra existir.
 
 A `transaction_risk` deste repo combina o perfil armazenado (`amount_avg`,
 `amount_std`, `last_txn_*`) com o request (`amount`, `lat`, `lon`, `txn_unixtime`)
-para produzir `amount_zscore`, `distance_from_last_km` e `velocity_kmh`. O ponto
-de ouro: ela usa **as mesmas funções** (`fraud_fs.transforms`) que o cálculo
-offline — então é impossível haver skew entre treino e serving para essas features.
+para produzir `amount_zscore`, `distance_from_last_km` e `velocity_kmh`. O Feast
+aplica a mesma view no cálculo histórico e na inferência com as fórmulas de
+`fraud_fs.transforms`.
 
 ### 7. TTL (time-to-live) das features
 
@@ -114,12 +114,12 @@ Quanto tempo um valor continua "válido" para o point-in-time join. Se o TTL é 
 dias e o perfil mais recente de uma conta tem 100 dias, o Feast **não** o usa
 (considera obsoleto) e retorna nulo. Protege contra servir features velhas demais.
 
-### 8. Training/serving skew (e como este projeto o elimina)
+### 8. Training/serving skew
 
 Skew acontece quando a feature no treino ≠ a feature no serving. Fontes comuns:
 fórmulas diferentes, janelas diferentes, fusos, ou dados online desatualizados.
-Defesas neste projeto: (a) transformações puras compartilhadas; (b) a mesma lista
-`FEATURE_REFS` no treino e na inferência; (c) a mesma on-demand FV nos dois lados.
+O projeto compartilha `FEATURE_REFS` e a on-demand feature view entre os dois
+caminhos. A frescura do perfil usado no serving depende da materialização no Redis.
 
 ### 9. Classe desbalanceada (o lado ML)
 
@@ -178,9 +178,9 @@ features online — trade-off entre custo de computação e o quão atual o mode
 **P: O que é uma on-demand feature view? Por que usar?**
 R: Uma feature calculada no momento do request, porque depende dos dados da própria
 transação (valor, local, hora) — não dá para pré-computar. Uso para z-score do
-valor, distância e velocidade. A vantagem é zero skew: a mesma função roda no treino
-e no serving. O custo é latência por request e, no Feast, ODFV é experimental para
-retrieval offline em larga escala.
+valor, distância e velocidade. A mesma função roda no treino e no serving, o que
+evita divergências nas fórmulas. A transformação adiciona trabalho ao request e,
+no Feast, ODFV é experimental para retrieval offline em larga escala.
 
 **P: Por que Parquet na offline e Redis na online? O que mudaria em produção?**
 R: Parquet é simples, colunar e reprodutível — ótimo para portfólio, mas não escala
